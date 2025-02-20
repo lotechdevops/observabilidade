@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: memory-nodes-alerts
+  namespace: observabilidade
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: memory-nodes-alerts
+      rules:
+        - alert: HighMemoryUsage
+          expr: >
+            (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            description: "🚨 A instância *{{ $labels.instance }}* está usando {{ printf \"%.2f\" $value }}% da memória disponível!"
+            summary: "Uso de Memória alto na instância {{ $labels.instance }}."
+            resolved_message: "✅ ALERTA RESOLVIDO"
