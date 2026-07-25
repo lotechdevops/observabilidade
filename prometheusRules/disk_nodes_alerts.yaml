@@ -4,18 +4,29 @@ metadata:
   name: disk-usage-alert
   namespace: observabilidade
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   groups:
     - name: disk-usage-alerts
       rules:
         - alert: HighDiskUsage
           expr: >
-            100 - ((node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} * 100) / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"}) > 80
-          for: 2m
+            (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 70
+          for: 5m
           labels:
-            severity: critical
+            severity: warning
+            channel: telegram-homelab
           annotations:
             description: "🚨 O uso de disco na instância *{{ $labels.instance }}* atingiu {{ printf \"%.2f\" $value }}%!"
             summary: "Uso de disco alto na instância {{ $labels.instance }}."
-            resolved_message: "✅ O uso de disco normalizou na instância {{ $labels.instance }}."
+        - alert: CriticalDiskUsage
+          expr: >
+            (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 90
+          for: 2m
+          labels:
+            severity: critical
+            channel: telegram-homelab
+          annotations:
+            description: "🚨 O uso de disco na instância *{{ $labels.instance }}* atingiu {{ printf \"%.2f\" $value }}%!"
+            summary: "Uso de disco alto na instância {{ $labels.instance }}."
+

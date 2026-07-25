@@ -4,18 +4,28 @@ metadata:
   name: cpu-nodes-alerts
   namespace: observabilidade
   labels:
-    release: prometheus
+    release: kube-prometheus-stack
 spec:
   groups:
     - name: cpu-nodes-alerts
       rules:
         - alert: HighCPUUsage
           expr: >
-            100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 20
-          for: 2m
+            avg((1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) by (instance, job) > 70
+          for: 5m
           labels:
-            severity: critical
+            severity: warning
+            channel: telegram-homelab
           annotations:
             description: "🚨 A CPU da instância *{{ $labels.instance }}* está em {{ printf \"%.2f\" $value }}% de uso!"
             summary: "Uso de CPU alto na instância {{ $labels.instance }}."
-            resolved_message: "✅ ALERTA RESOLVIDO"
+        - alert: CriticalCPUUsage
+          expr: >
+            avg((1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) by (instance, job) > 90
+          for: 2m
+          labels: 
+            severity: critical
+            channel: telegram-homelab
+          annotations:
+            description: "🚨 A CPU da instância *{{ $labels.instance }}* está em {{ printf \"%.2f\" $value }}% de uso!"
+            summary: "Uso de CPU alto na instância {{ $labels.instance }}."

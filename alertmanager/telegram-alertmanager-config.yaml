@@ -1,0 +1,47 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: telegram-config
+  namespace: observabilidade
+  labels:
+    alertmanagerConfig: telegram
+spec:
+  route:
+    receiver: telegram
+    groupBy: ['alertname']
+    groupWait: 15s
+    groupInterval: 3m
+    repeatInterval: 30m
+    matchers:
+      - name: channel
+        value: telegram-homelab
+        matchType: "="
+  inhibitRules:
+    - sourceMatch:
+        - name: 'severity'
+          value: 'critical'
+          matchType: '='
+      targetMatch:
+        - name: 'severity' 
+          value: 'warning'
+          matchType: '='
+      equal: ['instance']
+  receivers:
+    - name: telegram  
+      telegramConfigs:
+        - apiURL: https://api.telegram.org
+          botToken:
+            name: telegram-bot-token
+            key: token
+          chatID: -1004478110043   # canal "Alertas_Lab"
+          sendResolved: true
+          message: |
+            🚨 *Alerta:* {{ .CommonLabels.alertname }}
+            *Gravidade:* {{ .CommonLabels.severity }}
+            {{ range .Alerts }}
+            *Instância:* {{ .Labels.instance }}
+            *Job:* {{ .Labels.job }}
+            *Descrição:* {{ .Annotations.description }}
+            {{ end }}
+            *Status:* {{ .Status }}
+          parseMode: Markdown
